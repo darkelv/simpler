@@ -9,13 +9,14 @@ module Simpler
       @name = extract_name
       @request = Rack::Request.new(env)
       @response = Rack::Response.new
+      @request.env['simpler.params'] = @request.params.merge!(id: record)
     end
 
     def make_response(action)
       @request.env['simpler.controller'] = self
       @request.env['simpler.action'] = action
 
-      set_default_headers
+      set_headers( { 'Content-Type' => 'text/html' } )
       send(action)
       write_response
 
@@ -28,8 +29,8 @@ module Simpler
       self.class.name.match('(?<name>.+)Controller')[:name].downcase
     end
 
-    def set_default_headers
-      @response['Content-Type'] = 'text/html'
+    def set_headers(headers)
+      headers.each { |key, value| @response[key] = value }
     end
 
     def write_response
@@ -44,6 +45,10 @@ module Simpler
 
     def params
       @request.params
+    end
+
+    def record
+      @request.path_info.gsub(/[^\d]/, '')
     end
 
     def render(template)
